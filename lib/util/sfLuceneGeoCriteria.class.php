@@ -28,6 +28,11 @@ class sfLuceneGeoCriteria extends sfLuceneFacetsCriteria
     $this->unit = self::UNIT_KILOMETERS;
   }
 
+  public function getUnit()
+  {
+    return $this->unit;
+  }
+
   public static function getUnitRatio($unit = self::UNIT_KILOMETERS)
   {
     return ($unit == self::UNIT_KILOMETERS) ? self::MILES_PER_KILOMETERS : 1;

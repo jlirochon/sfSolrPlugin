@@ -530,7 +530,7 @@ Usage (kilometers):
     $criteria->addGeoCircle(48.8951187, 2.2876496, 2); // 2 km
     $criteria->addAscendingSortByDistance();
     
-    $results = new sfLuceneGeoResults($lucene->find($criteria), $lucene);
+    $results = $lucene->friendlyFind($criteria);
     
     foreach($results as $result)
     {
@@ -546,7 +546,7 @@ Usage (miles):
     $criteria->addGeoCircle(48.8951187, 2.2876496, 2); // 2 miles
     $criteria->addAscendingSortByDistance();
 
-    $results = new sfLuceneGeoResults($lucene->find($criteria), $lucene, sfLuceneGeoCriteria::UNIT_MILES);
+    $results = $lucene->friendlyFind($criteria);
 
     foreach($results as $result)
     {

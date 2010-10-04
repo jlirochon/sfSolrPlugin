@@ -664,13 +664,18 @@ class sfLucene
   */
   public function friendlyFind($query)
   {
-    $class = 'sfLuceneResults';
-    if($query instanceof sfLuceneFacetsCriteria)
+    if ($query instanceof sfLuceneGeoCriteria)
     {
-      $class = 'sfLuceneFacetsResults';
+      return new sfLuceneGeoResults($this->find($query), $this, $query->getUnit());
     }
-    
-    return new $class($this->find($query), $this);
+    elseif($query instanceof sfLuceneFacetsCriteria)
+    {
+      return new sfLuceneFacetsResults($this->find($query), $this);
+    }
+    else
+    {
+      return new sfLuceneResults($this->find($query), $this);
+    }
   }
 
   /**
