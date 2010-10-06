@@ -331,6 +331,7 @@ EOF;
         array('type' => 'arr', 'name' => 'components', 'value' => array(
           array('type' => 'str', 'value' => 'localsolr'),
           array('type' => 'str', 'value' => 'geofacet'),
+          array('type' => 'str', 'value' => 'facet'),
           array('type' => 'str', 'value' => 'mlt'),
           array('type' => 'str', 'value' => 'highlight'),
           array('type' => 'str', 'value' => 'debug')
