@@ -38,27 +38,27 @@ class sfLuceneFacetsResults extends sfLuceneResults
 
   public function getFacetQuery($name)
   {
-    $facets =  $this->getFacetQueries();
-    
-    if(!$facets || !isset($facets[$name]))
+    if (!$this->hasFacetQuery($name))
     {
-      
+
       return null;
     }
-    
+
+    $facets = $this->getFacetQueries();
+
     return $facets[$name];
   }
   
   public function getFacetField($name)
   {
-    $facets =  $this->getFacetFields();
-    
-    if(!$facets || !isset($facets[$name]))
+    if (!$this->hasFacetField($name))
     {
-      
+
       return null;
     }
-    
+
+    $facets =  $this->getFacetFields();
+
     return $facets[$name];
   }
   
@@ -80,5 +80,31 @@ class sfLuceneFacetsResults extends sfLuceneResults
     }
    
     return $this->facets_fields[$facet_field_name];
+  }
+
+  public function hasFacetQuery($name)
+  {
+    $facets = $this->getFacetQueries();
+
+    if(!$facets || !isset($facets[$name]))
+    {
+      
+      return false;
+    }
+
+    return true;
+  }
+
+  public function hasFacetField($name)
+  {
+    $facets =  $this->getFacetFields();
+
+    if(!$facets || !isset($facets[$name]))
+    {
+
+      return false;
+    }
+
+    return true;
   }
 }
