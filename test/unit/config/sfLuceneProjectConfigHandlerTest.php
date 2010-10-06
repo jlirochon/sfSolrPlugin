@@ -105,7 +105,12 @@ $expected = array (
       'host' => 'localhost',
       'port' => '8983',
       'base_url' => '/solr',
-
+      'localsolr' =>
+      array (
+        'enabled' => false,
+        'latitude_field' => 'lat',
+        'longitude_field' => 'lng',
+      ),
     ),
     'interface' =>
     array (
@@ -159,6 +164,12 @@ $expected = array (
       'host' => 'localhost',
       'port' => '8983',
       'base_url' => '/solr',
+      'localsolr' =>
+      array (
+        'enabled' => false,
+        'latitude_field' => 'lat',
+        'longitude_field' => 'lng',
+      ),
     ),
     'factories' =>
     array (
@@ -189,6 +200,12 @@ $expected = array (
       'host' => 'localhost',
       'port' => '8983',
       'base_url' => '/solr',
+      'localsolr' =>
+      array (
+        'enabled' => false,
+        'latitude_field' => 'lat',
+        'longitude_field' => 'lng',
+      ),
     ),
     'factories' =>
     array (
