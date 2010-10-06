@@ -28,6 +28,11 @@ class sfLuceneGeoCriteria extends sfLuceneFacetsCriteria
     $this->unit = self::UNIT_KILOMETERS;
   }
 
+  public function setUnit($unit)
+  {
+    $this->unit = $unit;
+  }
+
   public function getUnit()
   {
     return $this->unit;
