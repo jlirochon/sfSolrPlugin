@@ -176,11 +176,24 @@ class sfLuceneDoctrineIndexer extends sfLuceneModelIndexer
   {
     return NULL;
   }
-  
+
+  /**
+   * Generates getter name
+   *
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @static
+   * @param   $fieldName
+   * @param   $alias
+   * @return  string
+   */
+  public static function getGetterName($fieldName, $alias = null)
+  {
+    return ($alias ? $alias : sprintf('get%s', sfInflector::camelize($fieldName)));
+  }
+
   public function getFieldValue($field, $properties)
   {
-  
-    $getter = $properties->get('alias') ? $properties->get('alias') : 'get' . sfInflector::camelize($field);
+    $getter = self::getGetterName($field, $properties->get('alias'));
     
     // build getter by converting from underscore case to camel case
     try

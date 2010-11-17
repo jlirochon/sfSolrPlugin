@@ -195,11 +195,57 @@ class sfLucene
   }
 
   /**
+   * Uses php reflection to validate that $fieldName will be available on $className.
+   * This should prevent runtime errors while indexing.
+   *
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @throws  sfLuceneException
+   * @param   $className
+   * @param   $fieldName
+   * @param   $fieldAlias
+   * @return  bool
+   */
+
+  /**
+   * @param  $className
+   * @param  $fieldName
+   * @param  $fieldAlias
+   * @return bool
+   */
+  protected function validateModelField($className, $fieldName, $fieldAlias = null)
+  {
+    if (!class_exists($className))
+    {
+      throw new sfLuceneException(sprintf('missing class "%s".', $className));
+    }
+
+    $reflection = new ReflectionClass($className);
+    $getter = sfLuceneDoctrineIndexer::getGetterName($fieldName, $fieldAlias);
+
+    // first try simple method (should work for Propel too)
+    if ($reflection->hasMethod($getter))
+    {
+      return;
+    }
+
+    // try doctrine inspection
+    if (class_exists('Doctrine_Record') && $reflection->isSubclassOf('Doctrine_Record'))
+    {
+      if (Doctrine::getTable($className)->hasField($fieldName))
+      {
+        return;
+      }
+    }
+
+    throw new sfLuceneException(sprintf('"%s" model is missing "%s" method.', $className, $getter));
+  }
+
+
+  /**
   * Loads the config for the search engine.
   */
   protected function initialize()
   {
-
     // set a global configuration variable ...
     require($this->configuration->getConfigCache()->checkConfig('config/search.yml'));
 
@@ -234,6 +280,9 @@ class sfLucene
 
       foreach ($model['fields'] as $field => $fieldProperties)
       {
+        // validate field name on startup, in order to prevent runtime errors
+        $this->validateModelField($name, $field, $fieldProperties['alias']);
+
         $fieldsData = new sfParameterHolder();
         $fieldsData->add($fieldProperties);
 
