@@ -255,7 +255,7 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
    */
   protected function convertGeoDistances($unit = sfLuceneGeoCriteria::UNIT_KILOMETERS)
   {
-    $ratio = sfLuceneGeoCriteria::getUnitRatio($unit);
+    $ratio = sfLuceneCriteria::getGeoUnitRatio($unit);
 
     if ($ratio != 1)
     {
