@@ -26,22 +26,36 @@
  */
 class sfLuceneCriteria
 {
-  protected 
-    $query = null,
-    $scoring = null,
-    $params = array(),
-    $path = null,
-    $http_method = sfLuceneService::METHOD_GET,
-    $limit = 10,
-    $offset = 0;
-
   const
     TYPE_NONE = '',
     TYPE_AND  = 'AND',
     TYPE_OR   = 'OR',
     TYPE_DEFAULT = ' '; // default use the default separator defined in the schema.xml file
 
+  // constants for geographic search
+  const
+    UNIT_KILOMETERS = 1,
+    UNIT_MILES      = 2
+  ;
+  const DISTANCE_FIELD = 'geo_distance';
+  const MILES_PER_KILOMETERS = 0.621371192;
+
+  protected
+    $query = null,
+    $scoring = null,
+    $params = array(),
+    $path = null,
+    $http_method = sfLuceneService::METHOD_GET,
+    $limit = 10,
+    $offset = 0,
+    $geo_unit = self::UNIT_KILOMETERS
+  ;
   
+  /**
+   * Constructor
+   * 
+   * @return void
+   */
   public function __construct()
   {
     $this->query = '';
@@ -770,5 +784,118 @@ class sfLuceneCriteria
   {
     $keyword = str_replace('"', '', $keyword);
     return sfLuceneService::phrase($keyword);
+  }
+
+
+
+
+  /**
+   * Add a facet field
+   *
+   * @param string $name
+   * @return sfLuceneFacetsCriteria
+   */
+  public function addFacetField($name, $reset = false)
+  {
+    $this->setParam('facet', 'true');
+    $this->addParam('facet.field', $name, $reset);
+
+    return $this;
+  }
+
+  /**
+   * Add a facet query
+   *
+   * @param string $name
+   * @return sfLuceneFacetsCriteria
+   */
+  public function addFacetQuery($name, $reset = false)
+  {
+    $this->setParam('facet', 'true');
+    $this->addParam('facet.query', $name, $reset);
+
+    return $this;
+  }
+
+  /**
+   * Sets distance unit for geographic search
+   *
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @param   int $unit (sfLuceneCriteria::UNIT_KILOMETERS or sfLuceneCriteria::UNIT_MILES)
+   * @return  void
+   */
+  public function setGeoUnit($unit)
+  {
+    $this->geo_unit = $unit;
+  }
+
+  /**
+   * Gets distance unit
+   *
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @return  int
+   */
+  public function getGeoUnit()
+  {
+    return $this->geo_unit;
+  }
+
+  /**
+   * Returns the ratio between the current geo unit and sfLuceneCriteria::UNIT_MILES
+   * (localsolr internally uses miles as default unit) 
+   *
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @static
+   * @param   int $unit
+   * @return  float|int
+   */
+  public static function getGeoUnitRatio($unit = self::UNIT_KILOMETERS)
+  {
+    return ($unit == self::UNIT_KILOMETERS) ? self::MILES_PER_KILOMETERS : 1;
+  }
+
+  /**
+   * Limit results to those inside the circle. Distance between circle's center
+   * and the result is computed and stored in 'geo_distance' field.
+   *
+   * WARNING : localsolr must be enabled (see search.yml)
+   *
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @param   $latitude   latitude of the circle's center
+   * @param   $longitude  longitude of the circle's center
+   * @param   $radius     radius of the circle
+   * @return  void
+   */
+  public function addGeoCircle($latitude, $longitude, $radius)
+  {
+    // sets query type
+    $this->setParam('qt', 'geo');
+
+    $this->addParam('lat', $latitude);
+    $this->addParam('long', $longitude);
+    $this->addParam('radius', round($radius * self::getGeoUnitRatio($this->geo_unit)));
+  }
+
+  /**
+   * @return sfLuceneCriteria
+   */
+  public function addAscendingSortByDistance()
+  {
+    return $this->addSortBy(self::DISTANCE_FIELD, SORT_ASC);
+  }
+
+  public function addDescendingSortByDistance()
+  {
+    return $this->addSortBy(self::DISTANCE_FIELD, SORT_DESC);
+  }
+
+  public function addSortByDistance($order = SORT_ASC)
+  {
+    return $this->addSortBy(self::DISTANCE_FIELD, $order);
+  }
+
+  public function sortByDistance($order = SORT_ASC)
+  {
+    return $this->sortBy(self::DISTANCE_FIELD, $order);
   }
 }

@@ -24,15 +24,29 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
   protected
     $results = array(),
     $pointer = 0,
-    $search;
+    $search,
+    $facets_fields = null
+  ;
 
   /**
-  * Constructor.  Weeds through the results.
-  */
-  public function __construct(sfLuceneResponse $response, sfLucene $search)
+   * Constructor
+   *
+   * @author  Carl Vondrick <carl@carlsoft.net>
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @param   sfLuceneResponse $response
+   * @param   sfLucene $search
+   * @param   array $options
+   * @return  void
+   */
+  public function __construct(sfLuceneResponse $response, sfLucene $search, $options = array())
   {
     $this->results = $response;
     $this->search = $search;
+
+    if (isset($options['geo_unit']))
+    {
+      $this->convertGeoDistances($options['geo_unit']);
+    }
   }
 
   /**
@@ -138,5 +152,120 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
     
     return $this->getRawResult()->response->docs;
   }
-  
+
+  /*
+   * FACETS METHODS
+   */
+
+  public function getFacetQueries()
+  {
+
+    return $this->getFacetsField('facet_queries');
+  }
+
+  public function getFacetFields()
+  {
+
+    return $this->getFacetsField('facet_fields');
+  }
+
+  public function getFacetQuery($name)
+  {
+    if (!$this->hasFacetQuery($name))
+    {
+
+      return null;
+    }
+
+    $facets = $this->getFacetQueries();
+
+    return $facets[$name];
+  }
+
+  public function getFacetField($name)
+  {
+    if (!$this->hasFacetField($name))
+    {
+
+      return null;
+    }
+
+    $facets =  $this->getFacetFields();
+
+    return $facets[$name];
+  }
+
+  public function getFacetsField($facet_field_name)
+  {
+    // The underline library convert the json into a stdClass object
+    // There is no other choice for now, sorry for this code ...
+    if($this->facets_fields == null)
+    {
+      $json = json_decode($this->results->getRawResponse(), true);
+
+      $this->facets_fields = $json['facet_counts'];
+    }
+
+    if(!array_key_exists($facet_field_name, $this->facets_fields))
+    {
+
+      return null;
+    }
+
+    return $this->facets_fields[$facet_field_name];
+  }
+
+  public function hasFacetQuery($name)
+  {
+    $facets = $this->getFacetQueries();
+
+    if(!$facets || !isset($facets[$name]))
+    {
+
+      return false;
+    }
+
+    return true;
+  }
+
+  public function hasFacetField($name)
+  {
+    $facets =  $this->getFacetFields();
+
+    if(!$facets || !isset($facets[$name]))
+    {
+
+      return false;
+    }
+
+    return true;
+  }
+
+  /*
+   * GEO METHODS
+   */
+
+  /**
+   * For each result, converts geo_distance field value to the specified unit
+   * (localsolr internally works in miles)
+   *
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @param   int $unit
+   * @return  void
+   */
+  protected function convertGeoDistances($unit = sfLuceneGeoCriteria::UNIT_KILOMETERS)
+  {
+    $ratio = sfLuceneGeoCriteria::getUnitRatio($unit);
+
+    if ($ratio != 1)
+    {
+      foreach($this->results->response->docs as $index => $doc)
+      {
+        if (isset($doc->{sfLuceneGeoCriteria::DISTANCE_FIELD}))
+        {
+          $this->results->response->docs[$index]->{sfLuceneGeoCriteria::DISTANCE_FIELD} = $doc->{sfLuceneGeoCriteria::DISTANCE_FIELD} / $ratio;
+        }
+      }
+    }
+  }
 }
