@@ -168,6 +168,22 @@ EOF;
           }
         }
 
+        // add extra fields
+        if (isset($options['extra_fields']))
+        {
+          foreach($options['extra_fields'] as $field_name => $field_options)
+          {
+            if (isset($field_options['copyFrom']))
+            {
+              // add copyField
+              $copy_fields[$field_name] = $this->generateCopyFieldXml($field_options['copyFrom'], $field_name);
+              unset($field_options['copyFrom']);
+            }
+
+            $schema_options[$field_name] = $this->generateFieldXml($field_name, $field_options);
+          }
+        }
+
         $this->createSchemaFile($name, $config_dir, $schema_options, $copy_fields, $dynamic_fields, $culture, $config_dir);
         $this->createSolrConfigFile($name, $config_dir, $options['index']);
         $this->createSolrTxtFiles($config_dir);

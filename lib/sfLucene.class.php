@@ -229,9 +229,15 @@ class sfLucene
     }
 
     // try doctrine inspection
-    if (class_exists('Doctrine_Record') && $reflection->isSubclassOf('Doctrine_Record'))
+    if (class_exists('Doctrine_Core'))
     {
-      if (Doctrine::getTable($className)->hasField($fieldName))
+      $connections = Doctrine_Manager::getInstance()->getConnections();
+      if (sizeof($connections) == 0)
+      {
+        return; // can't test without connection
+      }
+
+      if ($reflection->isSubclassOf('Doctrine_Record') && Doctrine::getTable($className)->hasField($fieldName))
       {
         return;
       }
@@ -240,6 +246,22 @@ class sfLucene
     throw new sfLuceneException(sprintf('"%s" model is missing "%s" method.', $className, $getter));
   }
 
+  /**
+   * @return void
+   */
+  public function validateModelFields()
+  {
+    $holder = $this->getParameterHolder();
+
+    $models = $holder->get('models', array());
+    foreach($models->getAll() as $modelName => $model)
+    {
+      foreach($model->get('fields')->getAll() as $fieldName => $field)
+      {
+        $this->validateModelField($modelName, $fieldName, $field->get('alias'));
+      }
+    }
+  }
 
   /**
   * Loads the config for the search engine.
@@ -280,9 +302,6 @@ class sfLucene
 
       foreach ($model['fields'] as $field => $fieldProperties)
       {
-        // validate field name on startup, in order to prevent runtime errors
-        $this->validateModelField($name, $field, $fieldProperties['alias']);
-
         $fieldsData = new sfParameterHolder();
         $fieldsData->add($fieldProperties);
 
@@ -708,23 +727,21 @@ class sfLucene
 
   /**
   * Searches the index for the query and returns them with a symfony friendly interface.
-  * @param mixed $query The query
-  * @return sfLuceneResults The symfony friendly results.
+  *
+  * @author   Carl Vondrick <carl@carlsoft.net>
+  * @author   Thomas Rabaix <thomas.rabaix@soleoweb.com>
+  * @author   Julien Lirochon <julien@lirochon.net>
+  * @param    mixed $query The query
+  * @return   sfLuceneResults The symfony friendly results.
   */
-  public function friendlyFind($query)
+  public function friendlyFind($query, $options = array())
   {
-    if ($query instanceof sfLuceneGeoCriteria)
-    {
-      return new sfLuceneGeoResults($this->find($query), $this, $query->getUnit());
-    }
-    elseif($query instanceof sfLuceneFacetsCriteria)
-    {
-      return new sfLuceneFacetsResults($this->find($query), $this);
-    }
-    else
-    {
-      return new sfLuceneResults($this->find($query), $this);
-    }
+    $defaults = array(
+      'geo_unit' => $query->getGeoUnit()
+    );
+    $options = array_merge($defaults, $options);
+
+    return new sfLuceneResults($this->find($query), $this, $options);
   }
 
   /**

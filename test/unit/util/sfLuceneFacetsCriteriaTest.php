@@ -32,7 +32,7 @@ try {
 } catch (Exception $e) {
   $t->fail('__construct() takes a sfLuce instance');
 }
-$t->isa_ok(sfLuceneFacetsCriteria::newInstance(), 'sfLuceneFacetsCriteria', '::newInstance() returns an sfLuceneFacetsCriteria object');
+$t->isa_ok(sfLuceneFacetsCriteria::newInstance(), 'sfLuceneCriteria', '::newInstance() returns an sfLuceneCriteria object');
 
 $t->diag('testing ->getQuery()');
 $t->ok(is_string($criteria->getQuery()), '->getQuery() returns an instance a string');
