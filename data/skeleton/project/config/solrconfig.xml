@@ -5,37 +5,39 @@
 -->
 <config>
 
+  <luceneMatchVersion>LUCENE_40</luceneMatchVersion>
+
   <lib dir="${solr.lib.dir}"/>
 
-  <updateHandler class="solr.DirectUpdateHandler2" />
+  <updateHandler class="solr.DirectUpdateHandler2"/>
 
   %%REQUEST_PROCESSORS%%
 
-  <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
+  <requestDispatcher handleSelect="true">
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048"/>
   </requestDispatcher>
 
   %%SEARCH_COMPONENTS%%
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
-  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" />
-  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
+  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true"/>
+  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler"/>
+  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers"/>
 
   %%REQUEST_HANDLERS%%
 
-  <!-- config for the admin interface --> 
+  <!-- config for the admin interface -->
   <admin>
     <defaultQuery>solr</defaultQuery>
     <pingQuery>q=solr&amp;version=2.0&amp;start=0&amp;rows=0</pingQuery>
   </admin>
 
   <dataDir>${solr.data.dir}/%%INDEX_NAME%%</dataDir>
-    
+
   <!-- WARNING: this <indexDefaults> section only provides defaults for index writers
        in general. See also the <mainIndex> section after that when changing parameters
        for Solr's main Lucene index. -->
   <indexDefaults>
-   <!-- Values here affect all index writers and act as a default unless overridden. -->
+    <!-- Values here affect all index writers and act as a default unless overridden. -->
     <useCompoundFile>false</useCompoundFile>
 
     <mergeFactor>10</mergeFactor>
