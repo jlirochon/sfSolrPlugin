@@ -121,50 +121,16 @@ EOF;
           {
             $schema_options[$field_name] = $this->generateFieldXml($field_name, $field_option);
             $copy_fields[$field_name] = $this->generateCopyFieldXml($field_name, 'sfl_all');
-          }
 
-          /**
-           * Adds localsolr fields :
-           *
-           *  - lat :           used to store the latitude. may be customized in search.yml
-           *  - lng :           used to store the longitude. may be customized in search.yml
-           *  - geo_distance :  used for distributed searching
-           *  - _local* :       used internally by solr
-           *
-           * lat & lng fields will have a 'tdouble' type. It WILL override the type you defined in search.yml.
-           *  
-           */
-          if ($options['index']['localsolr']['enabled'])
-          {
-            // lat field
-            $latitude_field = $options['index']['localsolr']['latitude_field'];
-            $schema_options[$latitude_field] = $this->generateFieldXml($latitude_field, array(
-              'type' => 'tdouble',
-              'indexed' => true,
-              'stored' => true,
-              'default' => 0
-            ));
-
-            // lng field
-            $longitude_field = $options['index']['localsolr']['longitude_field'];
-            $schema_options[$longitude_field] = $this->generateFieldXml($longitude_field, array(
-              'type' => 'tdouble',
-              'indexed' => true,
-              'stored' => true,
-              'default' => 0
-            ));
-
-            // geo_distance field
-            $schema_options['geo_distance'] = $this->generateFieldXml('geo_distance', array(
-              'type' => 'sdouble'
-            ));
-
-            // _local* fields
-            $dynamic_fields['_local*'] = $this->generateFieldXml('_local*', array(
-              'type' => 'tdouble',
-              'indexed' => true,
-              'stored' => true
-            ), true);
+            /*
+             * Create subfields for fields of type location.
+             * I think Solr should handle this itself, but it seems it doesn't work for now.
+             */
+            if ($field_option['type'] == 'location')
+            {
+              $schema_options[$field_name.'_0_coordinate'] = $this->generateFieldXml($field_name.'_0_coordinate', array('type' => 'double'));
+              $schema_options[$field_name.'_1_coordinate'] = $this->generateFieldXml($field_name.'_1_coordinate', array('type' => 'double'));
+            }
           }
         }
 
@@ -322,38 +288,6 @@ EOF;
     $search_components  = array();
     $request_processors = array();
     $request_handlers   = array();
-
-    if ($options['localsolr']['enabled'])
-    {
-      // add search components
-      $search_components[] = $this->generateSearchComponentXml('localsolr', 'com.pjaol.search.solr.component.LocalSolrQueryComponent', array(
-        array('type' => 'str', 'name' => 'latField', 'value' => $options['localsolr']['latitude_field']),
-        array('type' => 'str', 'name' => 'lngField', 'value' => $options['localsolr']['longitude_field']),
-      ));
-      $search_components[] = $this->generateSearchComponentXml('geofacet', 'com.pjaol.search.solr.component.LocalSolrFacetComponent');
-
-      // add request processors
-      $request_processors[] = $this->generateRequestProcessorXml('com.pjaol.search.solr.update.LocalUpdateProcessorFactory', array(
-        array('type' => 'str', 'name' => 'latField', 'value' => $options['localsolr']['latitude_field']),
-        array('type' => 'str', 'name' => 'lngField', 'value' => $options['localsolr']['longitude_field']),
-        array('type' => 'int', 'name' => 'startTier', 'value' => 9),
-        array('type' => 'int', 'name' => 'endTier', 'value' => 17)
-      ));
-      $request_processors[] = $this->generateRequestProcessorXml('solr.RunUpdateProcessorFactory');
-      $request_processors[] = $this->generateRequestProcessorXml('solr.LogUpdateProcessorFactory');
-
-      // add request handlers
-      $request_handlers[] = $this->generateRequestHandlerXml('geo', 'org.apache.solr.handler.component.SearchHandler', array(
-        array('type' => 'arr', 'name' => 'components', 'value' => array(
-          array('type' => 'str', 'value' => 'localsolr'),
-          array('type' => 'str', 'value' => 'geofacet'),
-          array('type' => 'str', 'value' => 'facet'),
-          array('type' => 'str', 'value' => 'mlt'),
-          array('type' => 'str', 'value' => 'highlight'),
-          array('type' => 'str', 'value' => 'debug')
-        ))
-      ));
-    }
 
     $constants = array(
       '%%INDEX_NAME%%' => $name,
