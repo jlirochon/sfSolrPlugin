@@ -38,14 +38,14 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
    * @param   array $options
    * @return  void
    */
-  public function __construct(sfLuceneResponse $response, sfLucene $search, $options = array())
+  public function __construct($response, sfLucene $search, $options = array())
   {
     $this->results = $response;
     $this->search = $search;
 
-    if (isset($options['geo_unit']))
+    if (isset($options['is_group_result']) && $options['is_group_result'])
     {
-      $this->convertGeoDistances($options['geo_unit']);
+      $this->results->response = $this->results->doclist;
     }
   }
 
@@ -114,6 +114,10 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
 
   public function count()
   {
+    if ($this->isGrouped())
+    {
+      return 0;
+    }
 
     return $this->getRawResult()->response->numFound;
   }
@@ -241,31 +245,93 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
     return true;
   }
 
-  /*
-   * GEO METHODS
+  /**
+   * GROUP METHODS
    */
 
   /**
-   * For each result, converts geo_distance field value to the specified unit
-   * (localsolr internally works in miles)
+   * Returns whether response contains a grouped result or not
    *
    * @author  Julien Lirochon <julien@lirochon.net>
-   * @param   int $unit
-   * @return  void
+   * @return  boolean 
    */
-  protected function convertGeoDistances($unit = sfLuceneGeoCriteria::UNIT_KILOMETERS)
+  public function isGrouped()
   {
-    $ratio = sfLuceneCriteria::getGeoUnitRatio($unit);
+    return isset($this->getRawResult()->grouped);
+  }
 
-    if ($ratio != 1)
+  /**
+   * Returns a list of group names contained in the response. The list contains groups of both type
+   * (group.field and group.query)
+   *
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @return  array
+   */
+  public function getGroups()
+  {
+    $groups = array();
+
+    if ($this->isGrouped())
     {
-      foreach($this->results->response->docs as $index => $doc)
+      foreach($this->getRawResult()->grouped as $groupName => $rawGroup)
       {
-        if (isset($doc->{sfLuceneGeoCriteria::DISTANCE_FIELD}))
-        {
-          $this->results->response->docs[$index]->{sfLuceneGeoCriteria::DISTANCE_FIELD} = $doc->{sfLuceneGeoCriteria::DISTANCE_FIELD} / $ratio;
-        }
+        $groups[] = $groupName;
       }
     }
+
+    return $groups;
+  }
+
+  /**
+   * Depending of group type (group.query or group.field), returns a sfLuceneResults object,
+   * or an array of sfLuceneResults objects, respectively.
+   *
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @param   $groupName
+   * @return  array|bool|sfLuceneResults
+   */
+  public function getGroupResults($groupName)
+  {
+    // missing group
+    if (!isset($this->getRawResult()->grouped->$groupName))
+    {
+      return false;
+    }
+
+    // group.query ?
+    if (!isset($this->getRawResult()->grouped->$groupName->groups))
+    {
+      return new sfLuceneResults($this->getRawResult()->grouped->$groupName, $this->search, array(
+        'is_group_result' => true
+      ));
+    }
+
+    // group.field ?
+    $resultsByValue = array();
+    foreach($this->getRawResult()->grouped->$groupName->groups as $group)
+    {
+      $resultsByValue[$group->groupValue] = new sfLuceneResults($group, $this->search, array(
+        'is_group_result' => true
+      ));
+    }
+
+    return $resultsByValue;
+  }
+
+  /**
+   * Returns total number of matches for the group
+   *
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @param   $groupName
+   * @return  int
+   */
+  public function countGroupMatches($groupName)
+  {
+    if (!isset($this->getRawResult()->grouped->$groupName))
+    {
+      return 0;
+    }
+
+    return $this->getRawResult()->grouped->$groupName->matches;
   }
 }

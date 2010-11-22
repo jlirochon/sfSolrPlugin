@@ -37,7 +37,7 @@ class sfLuceneCriteria
     UNIT_KILOMETERS = 1,
     UNIT_MILES      = 2
   ;
-  const DISTANCE_FIELD = 'geo_distance';
+  const DISTANCE_FIELD = 'geodist()';
   const MILES_PER_KILOMETERS = 0.621371192;
 
   protected
@@ -818,6 +818,36 @@ class sfLuceneCriteria
   }
 
   /**
+   * GROUP METHODS
+   */
+
+  public function addGroupField($name, $reset = false)
+  {
+    $this->setParam('group', 'true');
+    $this->addParam('group.field', $name, $reset);
+
+    return $this;
+  }
+
+  public function addGroupQuery($name, $reset = false)
+  {
+    $this->setParam('group', 'true');
+    $this->addParam('group.query', $name, $reset);
+
+    return $this;
+  }
+
+  public function setGroupSort($sort)
+  {
+    $this->setParam('group.sort', $sort);
+  }
+
+  public function setGroupLimit($limit = 1)
+  {
+    $this->setParam('group.limit', $limit);
+  }
+
+  /**
    * Sets distance unit for geographic search
    *
    * @author  Julien Lirochon <julien@lirochon.net>
@@ -842,7 +872,7 @@ class sfLuceneCriteria
 
   /**
    * Returns the ratio between the current geo unit and sfLuceneCriteria::UNIT_MILES
-   * (localsolr internally uses miles as default unit) 
+   * (localsolr internally uses kilometers as default unit) 
    *
    * @author  Julien Lirochon <julien@lirochon.net>
    * @static
@@ -851,29 +881,24 @@ class sfLuceneCriteria
    */
   public static function getGeoUnitRatio($unit = self::UNIT_KILOMETERS)
   {
-    return ($unit == self::UNIT_KILOMETERS) ? self::MILES_PER_KILOMETERS : 1;
+    return ($unit == self::UNIT_KILOMETERS) ? 1 : self::MILES_PER_KILOMETERS;
   }
 
   /**
-   * Limit results to those inside the circle. Distance between circle's center
-   * and the result is computed and stored in 'geo_distance' field.
-   *
-   * WARNING : localsolr must be enabled (see search.yml)
+   * Limit results to those inside the circle.
    *
    * @author  Julien Lirochon <julien@lirochon.net>
+   * @param   $fieldName  name of the field that stores the document location 
    * @param   $latitude   latitude of the circle's center
    * @param   $longitude  longitude of the circle's center
    * @param   $radius     radius of the circle
    * @return  void
    */
-  public function addGeoCircle($latitude, $longitude, $radius)
+  public function addGeoCircle($fieldName, $latitude, $longitude, $radius)
   {
-    // sets query type
-    $this->setParam('qt', 'geo');
+    $radius = $radius / self::getGeoUnitRatio($this->geo_unit);
 
-    $this->addParam('lat', $latitude);
-    $this->addParam('long', $longitude);
-    $this->addParam('radius', round($radius * self::getGeoUnitRatio($this->geo_unit)));
+    $this->addParam('fq', sprintf('{!geofilt sfield=%s pt=%F,%F d=%F}', $fieldName, $latitude, $longitude, $radius));
   }
 
   /**
