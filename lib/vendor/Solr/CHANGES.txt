@@ -19,7 +19,7 @@ servlet container in the directory named "example".
 See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 
-$Id: CHANGES.txt 1030098 2010-11-02 16:09:05Z koji $
+$Id: CHANGES.txt 1035996 2010-11-17 12:26:15Z rmuir $
 
 ==================  4.0.0-dev ==================
 Versions of Major Components
@@ -302,6 +302,11 @@ New Features
 * SOLR-1336: Add SmartChinese (word segmentation for Simplified Chinese) 
   tokenizer and filters to contrib/analysis-extras (rmuir)
 
+* SOLR-2211: Added UAX29TokenizerFactory, which implements UAX#29, a unicode algorithm 
+  with good results for most languages.  (Tom Burton-West via rmuir)
+
+* SOLR-2237: Added StempelPolishStemFilterFactory to contrib/analysis-extras (rmuir)
+
 Optimizations
 ----------------------
 
@@ -543,6 +548,12 @@ Bug Fixes
 
 * SOLR-2057: DataImportHandler never calls UpdateRequestProcessor.finish()
   (Drew Farris via koji)
+
+* SOLR-1973: Empty fields in XML update messages confuse DataImportHandler. (koji)
+
+* SOLR-2221: Use StrUtils.parseBool() to get values of boolean options in DIH.
+  true/on/yes (for TRUE) and false/off/no (for FALSE) can be used for sub-options
+  (debug, verbose, synchronous, commit, clean, optimize) for full/delta-import commands. (koji)
   
 Other Changes
 ----------------------
@@ -645,6 +656,9 @@ Other Changes
 
 * SOLR-2013: Add mapping-FoldToASCII.txt to example conf directory.
   (Steven Rowe via koji)
+  
+* SOLR-2213: Upgrade to jQuery 1.4.3 (Erick Erickson via ryan)
+
 
 Build
 ----------------------
