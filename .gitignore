@@ -2,3 +2,4 @@
 .svn
 test/fixtures/project/cache
 test/fixtures/project/log
+lib/vendor/Solr/example/work
