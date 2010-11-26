@@ -786,8 +786,9 @@ class sfLuceneCriteria
     return sfLuceneService::phrase($keyword);
   }
 
-
-
+  /**
+   * FACET METHODS
+   */
 
   /**
    * Add a facet field
@@ -815,6 +816,20 @@ class sfLuceneCriteria
     $this->addParam('facet.query', $name, $reset);
 
     return $this;
+  }
+
+  /**
+   * Adds a facet pivot
+   *
+   * @author  Julien Lirochon <julien@lirochon.net>
+   * @param   string $name should be something like "primary_field_name,secondary_field_name" 
+   * @param   bool $reset
+   * @return  void
+   */
+  public function addPivot($name, $reset = false)
+  {
+    $this->setParam('facet', 'true');
+    $this->addParam('facet.pivot', $name, $reset);
   }
 
   /**
@@ -898,7 +913,11 @@ class sfLuceneCriteria
   {
     $radius = $radius / self::getGeoUnitRatio($this->geo_unit);
 
-    $this->addParam('fq', sprintf('{!geofilt sfield=%s pt=%F,%F d=%F}', $fieldName, $latitude, $longitude, $radius));
+    // $this->addParam('fq', sprintf('{!geofilt sfield=%s pt=%F,%F d=%F}', $fieldName, $latitude, $longitude, $radius));
+    $this->addParam('fq', '{!geofilt}');
+    $this->setParam('sfield', $fieldName);
+    $this->setParam('pt', sprintf('%F,%F', $latitude, $longitude));
+    $this->setParam('d', $radius);
   }
 
   /**
