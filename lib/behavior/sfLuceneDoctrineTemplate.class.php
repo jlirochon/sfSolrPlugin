@@ -15,6 +15,8 @@
  */
 class sfLuceneDoctrineTemplate extends Doctrine_Template
 {
+  private $_listener;
+
   /**
    * setTableDefinition
    *
@@ -22,6 +24,15 @@ class sfLuceneDoctrineTemplate extends Doctrine_Template
    */
   public function setTableDefinition()
   {
-    $this->addListener(new sfLuceneDoctrineListener);
+    $this->_listener = new sfLuceneDoctrineListener();
+    $this->addListener($this->_listener);
+  }
+
+  /**
+   * Saves index by deleting and inserting.
+   */
+  public function saveIndex($node)
+  {
+    $this->_listener->saveIndex($node);
   }
 }
