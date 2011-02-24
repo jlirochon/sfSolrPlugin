@@ -25,7 +25,8 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
     $results = array(),
     $pointer = 0,
     $search,
-    $facets_fields = null
+    $facets_fields = null,
+    $group_results = null
   ;
 
   /**
@@ -116,7 +117,14 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
   {
     if ($this->isGrouped())
     {
-      return 0;
+      /**
+       * returns matches from the first group
+       * (all groups appears to have the same number of matches)
+       */
+      foreach($this->getFixedGroupResults() as $group)
+      {
+        return $group->matches;
+      }
     }
 
     return $this->getRawResult()->response->numFound;
@@ -250,9 +258,9 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
    */
 
   /**
-   * Returns whether response contains a grouped result or not
+   * Returns whether the response contains grouped results or not
    *
-   * @author  Julien Lirochon <julien@lirochon.net>
+   * @author  Julien Lirochon <julien@kolana-studio.com>
    * @return  boolean 
    */
   public function isGrouped()
@@ -264,51 +272,80 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
    * Returns a list of group names contained in the response. The list contains groups of both type
    * (group.field and group.query)
    *
-   * @author  Julien Lirochon <julien@lirochon.net>
+   * @author  Julien Lirochon <julien@kolana-studio.com>
    * @return  array
    */
   public function getGroups()
   {
-    $groups = array();
-
     if ($this->isGrouped())
     {
-      foreach($this->getRawResult()->grouped as $groupName => $rawGroup)
+      return array_keys($this->getFixedGroupResults());
+    }
+
+    return array();
+  }
+
+  /**
+   * Fix a problem in Solr when it does not evaluate {!key=mykey} as it does for facets
+   *   "{!key=mykey}some:query" will be fixed as "mykey"
+   *   "some:query" will be kept as "some:query"
+   *
+   * @author  Julien Lirochon <julien@kolana-studio.com>
+   * @since   2011-02-22
+   * @param   string $groupName
+   * @return  string
+   */
+  protected function fixGroupName($groupName)
+  {
+    if (preg_match('/\{![^}]*key=([a-zA-Z0-9]+)[^}]*\}/', $groupName, $matches))
+    {
+      $groupName = $matches[1];
+    }
+
+    return $groupName;
+  }
+
+  public function getFixedGroupResults()
+  {
+    if (null === $this->group_results)
+    {
+      $this->group_results = array();
+      foreach($this->getRawResult()->grouped as $name => $result)
       {
-        $groups[] = $groupName;
+        $this->group_results[$this->fixGroupName($name)] = $result;
       }
     }
 
-    return $groups;
+    return $this->group_results;
   }
 
   /**
    * Depending of group type (group.query or group.field), returns a sfLuceneResults object,
    * or an array of sfLuceneResults objects, respectively.
    *
-   * @author  Julien Lirochon <julien@lirochon.net>
-   * @param   $groupName
+   * @author  Julien Lirochon <julien@kolana-studio.com>
+   * @param   string $groupName
    * @return  array|bool|sfLuceneResults
    */
   public function getGroupResults($groupName)
   {
-    // missing group
-    if (!isset($this->getRawResult()->grouped->$groupName))
+    if (!$this->hasGroupResults($groupName))
     {
       return false;
     }
 
     // group.query ?
-    if (!isset($this->getRawResult()->grouped->$groupName->groups))
+    $group_results = $this->getFixedGroupResults();
+    if (!isset($group_results[$groupName]->groups))
     {
-      return new sfLuceneResults($this->getRawResult()->grouped->$groupName, $this->search, array(
+      return new sfLuceneResults($group_results[$groupName], $this->search, array(
         'is_group_result' => true
       ));
     }
 
     // group.field ?
     $resultsByValue = array();
-    foreach($this->getRawResult()->grouped->$groupName->groups as $group)
+    foreach($group_results[$groupName]->groups as $group)
     {
       $resultsByValue[$group->groupValue] = new sfLuceneResults($group, $this->search, array(
         'is_group_result' => true
@@ -319,19 +356,46 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
   }
 
   /**
+   * Returns whether the response contains the given $groupName or not
+   *
+   * @author  Julien Lirochon <julien@kolana-studio.com>
+   * @param   string $groupName
+   * @return  bool
+   */
+  public function hasGroupResults($groupName)
+  {
+    $groups = $this->getGroups();
+
+    if(!$groups || !in_array($groupName, $groups))
+    {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
    * Returns total number of matches for the group
    *
-   * @author  Julien Lirochon <julien@lirochon.net>
-   * @param   $groupName
+   * @author  Julien Lirochon <julien@kolana-studio.com>
+   * @param   string $groupName
    * @return  int
    */
   public function countGroupMatches($groupName)
   {
-    if (!isset($this->getRawResult()->grouped->$groupName))
+    if (!$this->hasGroupResults($groupName))
     {
       return 0;
     }
 
-    return $this->getRawResult()->grouped->$groupName->matches;
+    $results = $this->getGroupResults($groupName);
+
+    // @todo: how can we handle this case ?
+    if (is_array($results))
+    {
+      return 0;
+    }
+
+    return $results->results->doclist->numFound;
   }
 }
