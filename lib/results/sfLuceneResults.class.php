@@ -297,7 +297,7 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
    */
   protected function fixGroupName($groupName)
   {
-    if (preg_match('/\{![^}]*key=([a-zA-Z0-9]+)[^}]*\}/', $groupName, $matches))
+    if (preg_match('/\{![^}]*key=([a-zA-Z0-9_]+)[^}]*\}/', $groupName, $matches))
     {
       $groupName = $matches[1];
     }
