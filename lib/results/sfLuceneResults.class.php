@@ -398,4 +398,15 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
 
     return $results->results->doclist->numFound;
   }
+
+  /**
+   * Retrieves 'facet_dates' facet
+   *
+   * @author  Mathieu Dumoutier
+   *
+   */
+  public function getFacetDates()
+  {
+    return $this->getFacetsField('facet_dates');
+  }
 }
