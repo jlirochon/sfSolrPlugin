@@ -254,6 +254,25 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
   }
 
   /**
+   * Returns whether the response contains a facet date result for the given field
+   *
+   * @author  Mathieu Dumoutier
+   * @param   string  $name   date field name
+   * @return  bool
+   */
+  public function hasFacetDate($name)
+  {
+    $facets = $this->getFacetDates();
+
+    if(!$facets || !isset($facets[$name]))
+    {
+      return false;
+    }
+
+    return true;
+  }
+  
+  /**
    * GROUP METHODS
    */
 
@@ -400,7 +419,7 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
   }
 
   /**
-   * Retrieves 'facet_dates' facet
+   * Retrieves all facet date results
    *
    * @author  Mathieu Dumoutier
    *
@@ -408,5 +427,24 @@ class sfLuceneResults implements Iterator, Countable, ArrayAccess
   public function getFacetDates()
   {
     return $this->getFacetsField('facet_dates');
+  }
+
+  /**
+   * Retrieves number of matches for $
+   *
+   * @author  Mathieu Dumoutier
+   * @param   string  $name   date field name
+   * @return  null
+   */
+  public function getFacetDate($name)
+  {
+    if (!$this->hasFacetDate($name))
+    {
+      return null;
+    }
+
+    $facets = $this->getFacetDates();
+
+    return $facets[$name];
   }
 }
