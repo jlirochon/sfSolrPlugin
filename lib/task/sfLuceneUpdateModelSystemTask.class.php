@@ -183,7 +183,7 @@ EOF;
   
   public function isMemoryException($line)
   {
-    if(preg_match("/Allowed memory size of ([0-9]*) bytes/", $line))
+    if(preg_match("/(Out of memory|Allowed memory size of ((-|)[0-9]*) bytes)/", $line))
     {
       $this->logSection('lucene', '  catch memory limit exception');
 
